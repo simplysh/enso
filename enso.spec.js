@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { render } = require('./enso.js');
+const { render, helper } = require('./enso.js');
 
 describe('interpolation', function() {
   it('start of string', function() {
@@ -27,6 +27,17 @@ describe('interpolation', function() {
     assert.equal(
       render('My name is {{name}}, aged {{age}}.', { name: 'Akari', age: 27 }),
       'My name is Akari, aged 27.'
+    );
+  });
+});
+
+describe('helpers', function() {
+  it('should be callable', function() {
+    helper('shout', (value) => value.toUpperCase());
+
+    assert.equal(
+      render('"{{ shout(action) }}!", he shouted', { action: 'run' }),
+      '"RUN!", he shouted'
     );
   });
 });

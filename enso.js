@@ -1,29 +1,36 @@
 const markers = '{{}}';
+const helpers = {};
 
 function render(template, data) {
   const root = {
     type: 'root',
-    children: []
-  }
+    children: [],
+  };
 
   let parent = root;
   let cursor = 0;
 
   // build AST tree
-  while ((found = template.indexOf(markers[0], cursor)) !== -1 && template[found + 1] === markers[1]) {
+  while (
+    (found = template.indexOf(markers[0], cursor)) !== -1
+    && template[found + 1] === markers[1]
+  ) {
     // insert all text up to expression
     parent.children.push({
       type: 'text',
       value: template.substring(cursor, found),
-      children: []
+      children: [],
     });
 
     // add expression and move cursor
-    if ((cursor = template.indexOf(markers[2], found)) !== -1 && template[cursor + 1] === markers[3]) {
+    if (
+      (cursor = template.indexOf(markers[2], found)) !== -1
+      && template[cursor + 1] === markers[3]
+    ) {
       parent.children.push({
         type: 'expression',
-        value: template.substring(found + 2, cursor),
-        children: []
+        value: template.substring(found + 2, cursor).trim(),
+        children: [],
       });
 
       cursor = cursor + 2;
@@ -36,7 +43,7 @@ function render(template, data) {
   parent.children.push({
     type: 'text',
     value: template.substring(cursor),
-    children: []
+    children: [],
   });
 
   // render back to string
@@ -54,7 +61,11 @@ function render(template, data) {
           result += node.value;
           break;
         case 'expression':
-          result += (new Function(...Object.keys(data), `return ${node.value};`))(...Object.values(data));
+          result += new Function(
+            ...Object.keys(data),
+            ...Object.keys(helpers),
+            `return ${node.value};`
+          )(...Object.values(data), ...Object.values(helpers));
           break;
         default:
           throw new Error('Internal Error');
@@ -65,4 +76,13 @@ function render(template, data) {
   return result;
 }
 
-exports.render = render;
+function helper(id, callback) {
+  helpers[id] = callback;
+}
+
+module.exports = {
+  render,
+  helpers,
+  helper,
+  markers,
+};
