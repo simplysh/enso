@@ -1,0 +1,22 @@
+{
+  "name": "enso",
+  "version": "1.0.0",
+  "description": "",
+  "main": "enso.js",
+  "scripts": {
+    "test": "mocha enso.spec.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplysh/enso.git"
+  },
+  "author": "Andrei Nemes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simplysh/enso/issues"
+  },
+  "homepage": "https://github.com/simplysh/enso#readme",
+  "devDependencies": {
+    "mocha": "10.2.0"
+  }
+}
