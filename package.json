@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/simplysh/enso#readme",
   "devDependencies": {
+    "chai": "4.3.7",
     "mocha": "10.2.0"
   }
 }
