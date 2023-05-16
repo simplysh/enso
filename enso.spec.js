@@ -47,7 +47,7 @@ describe('built-ins', function() {
 
       expect(
         enso(
-          "{{ render('greet', { name: patrons[0] }) }}",
+          "{{ render('greet', { name: patrons[0] }) }} {{ render('greet', { name: patrons[1] }) }}",
           { patrons: ['James', 'Jake'] }
         )
       ).to.equal(

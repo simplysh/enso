@@ -1,5 +1,5 @@
 function enso(source, data) {
-  return render(parse(source, data), data);
+  return output(parse(source, data), data);
 }
 
 function seek(text, sequence, from) {
@@ -21,19 +21,67 @@ function seek(text, sequence, from) {
 
 function parse(template, data) {
   const root = {
-    type: 'root',
+    type: 'block',
     children: [],
   };
 
-  let parent = root; // todo actually handle recursive
-  let cursor = 0;
-  let found = -1;
+  let stack = [{ node: root, template, data }];
 
-  // we only really care about expressions
-  // read all text until we find one
-  while ((found = seek(template, enso.marker.substring(0, 2), cursor)) !== -1) {
-    // insert all text up to expression
-    const value = template.substring(cursor, found);
+  while(stack.length) {
+    let { node: parent, template, data } = stack.pop();
+    let cursor = 0;
+    let found = -1;
+
+    // we only really care about expressions
+    // read all text until we find one
+    while ((found = seek(template, enso.marker.substring(0, 2), cursor)) !== -1) {
+      // insert all text up to expression
+      const value = template.substring(cursor, found);
+
+      if (value !== '') {
+        parent.children.push({
+          type: 'text',
+          value,
+          children: [],
+        });
+      }
+
+      // read expression and move cursor
+      if ((cursor = seek(template, enso.marker.substring(2), found)) !== -1) {
+        // resolve expression in the current context
+        const expression = template.substring(found + 2, cursor).trim();
+
+        let value = new Function(
+          ...Object.keys(data),
+          ...Object.keys(enso.helpers),
+          ...Object.keys(enso.builtins),
+          `return ${expression};`
+        )(
+          ...Object.values(data),
+          ...Object.values(enso.helpers),
+          ...Object.values(enso.builtins)
+        );
+
+        if (typeof value === 'function') {
+          value(parent, stack);
+        } else {
+          parent.children.push({
+            type: 'text',
+            value,
+            expression,
+            children: [],
+          });
+        }
+
+        cursor = cursor + 2;
+        continue;
+      }
+
+      throw new Error(`Unterminated expression: ${template.substring(found, 25)}...`);
+    }
+
+    // insert the remaining text
+    const value = template.substring(cursor);
 
     if (value !== '') {
       parent.children.push({
@@ -42,70 +90,49 @@ function parse(template, data) {
         children: [],
       });
     }
-
-    // read expression and move cursor
-    if ((cursor = seek(template, enso.marker.substring(2), found)) !== -1) {
-      // resolve expression in the current context
-      const expression = template.substring(found + 2, cursor).trim();
-
-      const value = new Function(
-        ...Object.keys(data),
-        ...Object.keys(enso.helpers),
-        `return ${expression};`
-      )(
-        ...Object.values(data),
-        ...Object.values(enso.helpers)
-      );
-
-      parent.children.push({
-        type: 'text',
-        value,
-        expression,
-        children: [],
-      });
-
-      cursor = cursor + 2;
-      continue;
-    }
-
-    throw new Error(`Unterminated expression: ${template.substring(found, 25)}...`);
   }
 
-  // insert the remaining text
-  const value = template.substring(cursor);
-
-  if (value !== '') {
-    parent.children.push({
-      type: 'text',
-      value,
-      children: [],
-    });
-  }
-
-  return parent;
+  return root;
 }
 
-function render(root) {
-  const stack = [root];
+function* flatten(root) {
+  for (node of root.children) {
+    if (node.type === 'block') {
+      yield* flatten(node);
+    } else {
+      yield node;
+    }
+  }
+}
+
+function output(root) {
   let result = '';
 
-  while (stack.length) {
-    const parent = stack.pop();
-
-    for (const node of parent.children) {
-      if (node.value === '') continue;
-
-      switch (node.type) {
-        case 'text':
-          result += node.value;
-          break;
-        default:
-          throw new Error('Internal Error');
-      }
+  for (node of flatten(root)) {
+    switch (node.type) {
+      case 'text':
+        result += node.value;
+        break;
+      default:
+        throw new Error(`Internal Error: no node type ${node.type}`);
     }
   }
 
   return result;
+}
+
+function render(block, data) {
+  const template = enso.blocks[block];
+
+  return function(parent, stack) {
+    const node = {
+      type: 'block',
+      children: []
+    };
+
+    parent.children.push(node);
+    stack.push({ node, template, data });
+  }
 }
 
 function helper(name, callback) {
@@ -118,12 +145,13 @@ function block(name, template) {
 
 Object.assign(enso, {
   marker: '{{}}',
+  builtins: {
+    render
+  },
   helpers: {},
   blocks: {},
   block,
   helper,
 });
-
-// enso('{{name}} are mere', { name: 'Ana' });
 
 module.exports = enso;
