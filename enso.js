@@ -1,35 +1,54 @@
-const markers = '{{}}';
-const helpers = {};
+function enso(source, data) {
+  return render(parse(source, data), data);
+}
 
-function render(template, data) {
-  const root = {
+function parse(template, data, parent) {
+  parent ??= {
     type: 'root',
     children: [],
   };
 
-  let parent = root;
   let cursor = 0;
+  let found = -1;
 
-  // build AST tree
+  // we only really care about expressions
+  // read all text until we find one
   while (
-    (found = template.indexOf(markers[0], cursor)) !== -1
-    && template[found + 1] === markers[1]
+    (found = template.indexOf(enso.marker[0], cursor)) !== -1
+    && template[found + 1] === enso.marker[1]
   ) {
     // insert all text up to expression
-    parent.children.push({
-      type: 'text',
-      value: template.substring(cursor, found),
-      children: [],
-    });
+    const value = template.substring(cursor, found);
 
-    // add expression and move cursor
-    if (
-      (cursor = template.indexOf(markers[2], found)) !== -1
-      && template[cursor + 1] === markers[3]
-    ) {
+    if (value !== '') {
       parent.children.push({
-        type: 'expression',
-        value: template.substring(found + 2, cursor).trim(),
+        type: 'text',
+        value,
+        children: [],
+      });
+    }
+
+    // read expression and move cursor
+    if (
+      (cursor = template.indexOf(enso.marker[2], found)) !== -1
+      && template[cursor + 1] === enso.marker[3]
+    ) {
+      // resolve expression in the current context
+      const expression = template.substring(found + 2, cursor).trim();
+
+      const value = new Function(
+        ...Object.keys(data),
+        ...Object.keys(enso.helpers),
+        `return ${expression};`
+      )(
+        ...Object.values(data),
+        ...Object.values(enso.helpers)
+      );
+
+      parent.children.push({
+        type: 'text',
+        value,
+        expression,
         children: [],
       });
 
@@ -37,16 +56,24 @@ function render(template, data) {
       continue;
     }
 
-    throw new Error('Unterminated expression.');
+    throw new Error(`Unterminated expression: ${template.substring(found, 10)}...`);
   }
 
-  parent.children.push({
-    type: 'text',
-    value: template.substring(cursor),
-    children: [],
-  });
+  // insert the remaining text
+  const value = template.substring(cursor);
 
-  // render back to string
+  if (value !== '') {
+    parent.children.push({
+      type: 'text',
+      value,
+      children: [],
+    });
+  }
+
+  return parent;
+}
+
+function render(root) {
   const stack = [root];
   let result = '';
 
@@ -60,13 +87,6 @@ function render(template, data) {
         case 'text':
           result += node.value;
           break;
-        case 'expression':
-          result += new Function(
-            ...Object.keys(data),
-            ...Object.keys(helpers),
-            `return ${node.value};`
-          )(...Object.values(data), ...Object.values(helpers));
-          break;
         default:
           throw new Error('Internal Error');
       }
@@ -76,13 +96,14 @@ function render(template, data) {
   return result;
 }
 
-function helper(id, callback) {
-  helpers[id] = callback;
+function helper(name, callback) {
+  enso.helpers[name] = callback;
 }
 
-module.exports = {
-  render,
-  helpers,
+Object.assign(enso, {
+  marker: '{{}}',
+  helpers: {},
   helper,
-  markers,
-};
+});
+
+module.exports = enso;
