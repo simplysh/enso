@@ -63,6 +63,16 @@ describe('blocks', function() {
     expect(enso.blocks).to.have.property('greet');
     expect(enso.blocks['greet']).to.equal('Hello, {{name}}!');
   });
+
+  it('can use slots', function() {
+    enso.block('wrap', '<strong>{{ slot() }}</strong>');
+
+    expect(
+      enso("Exploring the city is a {{ render('wrap') }}must{{ end() }}")
+    ).to.equal(
+      'Exploring the city is a <strong>must</strong>'
+    );
+  });
 });
 
 describe('helpers', function() {

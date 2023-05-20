@@ -1,4 +1,4 @@
-function enso(source, data) {
+function enso(source, data = {}) {
   return output(parse(source, data), data);
 }
 
@@ -21,14 +21,15 @@ function seek(text, sequence, from) {
 
 function parse(template, data) {
   const root = {
-    type: 'block',
+    type: 'root',
     children: [],
   };
 
   let stack = [{ node: root, template, data }];
 
   while(stack.length) {
-    let { node: parent, template, data } = stack.pop();
+    const visitor = stack.pop();
+    let { node: parent, template, data } = visitor;
     let cursor = 0;
     let found = -1;
 
@@ -63,7 +64,7 @@ function parse(template, data) {
         );
 
         if (typeof value === 'function') {
-          value(parent, stack);
+          value(visitor, stack);
         } else {
           parent.children.push({
             type: 'text',
@@ -97,7 +98,7 @@ function parse(template, data) {
 
 function* flatten(root) {
   for (node of root.children) {
-    if (node.type === 'block') {
+    if (node.type !== 'text') {
       yield* flatten(node);
     } else {
       yield node;
@@ -106,6 +107,7 @@ function* flatten(root) {
 }
 
 function output(root) {
+  console.log(JSON.stringify(root, undefined, 2));
   let result = '';
 
   for (node of flatten(root)) {
@@ -121,17 +123,29 @@ function output(root) {
   return result;
 }
 
-function render(block, data) {
+function render(block, data = {}) {
   const template = enso.blocks[block];
 
-  return function(parent, stack) {
+  return function(visitor, stack) {
     const node = {
       type: 'block',
       children: []
     };
 
-    parent.children.push(node);
+    visitor.node.children.push(node);
     stack.push({ node, template, data });
+  }
+}
+
+function slot() {
+  return function(visitor, stack) {
+    console.log('slot', visitor, stack);
+  }
+}
+
+function end() {
+  return function(visitor, stack) {
+    console.log('end', visitor, stack);
   }
 }
 
@@ -144,14 +158,20 @@ function block(name, template) {
 }
 
 Object.assign(enso, {
+  context: undefined,
   marker: '{{}}',
   builtins: {
-    render
+    render,
+    slot,
+    end
   },
   helpers: {},
   blocks: {},
   block,
   helper,
 });
+
+enso.block('wrap', '<strong>{{ slot() }}</strong>');
+console.log(enso("Exploring the city is a {{ render('wrap') }}must{{ end() }}"));
 
 module.exports = enso;
