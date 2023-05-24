@@ -40,7 +40,7 @@ describe('interpolation', function() {
   });
 });
 
-describe.skip('built-ins', function() {
+describe('built-ins', function() {
   describe('render', function() {
     it('can accept data', function() {
       enso.block('greet', 'Hello, {{name}}!');

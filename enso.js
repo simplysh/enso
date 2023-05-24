@@ -2,20 +2,36 @@
 const props = {
     delimiters: '{{}}',
     helpers: {},
-    builtins: {},
+    blocks: {},
+    builtins: {
+        render(blockId, data = {}) {
+            return function (visitor) {
+                const template = _enso.blocks[blockId];
+                const node = {
+                    type: 'block',
+                    children: []
+                };
+                visitor.children.push(node);
+                parse(template, data, node);
+            };
+        }
+    },
     helper(id, callback) {
         this.helpers[id] = callback;
+    },
+    block(id, template) {
+        this.blocks[id] = template;
     }
 };
-const enso = Object.assign(function _enso_(source, data = {}) {
+const _enso = Object.assign(function enso(source, data = {}) {
     return output(parse(source, data, {
         type: 'root',
         children: [],
     }));
 }, props);
 function parse(template, data, node) {
-    const expStart = enso.delimiters.substring(0, 2);
-    const expEnd = enso.delimiters.substring(2);
+    const expStart = _enso.delimiters.substring(0, 2);
+    const expEnd = _enso.delimiters.substring(2);
     let startIndex = 0;
     let endIndex = 0;
     // we only really care about expressions
@@ -32,7 +48,7 @@ function parse(template, data, node) {
         if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
             // evaluate expression in the current context
             const expression = template.substring(startIndex + 2, endIndex).trim();
-            let value = new Function(...Object.keys(data), ...Object.keys(enso.helpers), ...Object.keys(enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(enso.helpers), ...Object.values(enso.builtins));
+            let value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
             if (typeof value === 'function') {
                 value(node);
             }
@@ -95,4 +111,4 @@ function* flatten(root) {
         }
     }
 }
-module.exports = enso;
+module.exports = _enso;
