@@ -68,9 +68,9 @@ describe('blocks', function() {
     enso.block('wrap', '<strong>{{ slot() }}</strong>');
 
     expect(
-      enso("Exploring the city is a {{ render('wrap') }}must{{ end() }}")
+      enso("Exploring the city is a {{ render('wrap') }}must{{ end() }}!")
     ).to.equal(
-      'Exploring the city is a <strong>must</strong>'
+      'Exploring the city is a <strong>must</strong>!'
     );
   });
 });
