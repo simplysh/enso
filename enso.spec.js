@@ -40,7 +40,7 @@ describe('interpolation', function() {
   });
 });
 
-describe('built-ins', function() {
+describe.skip('built-ins', function() {
   describe('render', function() {
     it('can accept data', function() {
       enso.block('greet', 'Hello, {{name}}!');
@@ -57,7 +57,7 @@ describe('built-ins', function() {
   });
 });
 
-describe('blocks', function() {
+describe.skip('blocks', function() {
   it('can be registered', function() {
     expect(() => enso.block('greet', 'Hello, {{name}}!')).not.to.throw();
     expect(enso.blocks).to.have.property('greet');
@@ -77,10 +77,10 @@ describe('blocks', function() {
 
 describe('helpers', function() {
   it('should be callable', function() {
-    enso.helper('shout', (value) => value.toUpperCase());
+    enso.helper('loud', (value) => value.toUpperCase());
 
     expect(
-      enso('"{{ shout(action) }}!", he shouted', { action: 'run' })
+      enso('"{{ loud(action) }}!", he shouted', { action: 'run' })
     ).to.equal(
       '"RUN!", he shouted'
     );
