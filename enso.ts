@@ -1,39 +1,6 @@
-type Helper = (...args: any[]) => (visitor: BranchNode) => void;
-
-interface EnsoProps {
-  delimiters: string;
-  helpers: { [id: string]: () => any };
-  blocks: { [id: string]: string };
-  builtins: { [id: string]: Helper };
-  helper(id: string, callback: () => any): void;
-  block(id: string, template: string): void;
-}
-
-type Enso = (source: string, data?: {}) => string;
-
-interface RootNode {
-  type: 'root';
-  children: Node[];
-}
-
-interface BlockNode {
-  type: 'block';
-  children: Node[];
-}
-
-interface TextNode {
-  type: 'text';
-  expression?: string;
-  value: string;
-}
-
-type BranchNode = RootNode | BlockNode;
-type LeafNode = TextNode
-
-type Node = BranchNode | LeafNode;
-
 const props: EnsoProps = {
   delimiters: '{{}}',
+  context: [],
   helpers: {},
   blocks: {},
   builtins: {
@@ -41,13 +8,32 @@ const props: EnsoProps = {
       return function(visitor) {
         const template = _enso.blocks[blockId];
 
-        const node = {
+        const node: BlockNode = {
           type: 'block',
           children: []
-        } as BlockNode;
+        };
 
         visitor.children.push(node);
         parse(template, data, node);
+
+        // if rendering added a context, "yield" it
+        if (_enso.context.length) return _enso.context[_enso.context.length - 1];
+      }
+    },
+    slot() {
+      return function(visitor) {
+        const node: SlotNode = {
+          type: 'slot',
+          children: []
+        };
+
+        visitor.children.push(node);
+        _enso.context.push(node);
+      }
+    },
+    end() {
+      return function() {
+        _enso.context.pop();
       }
     }
   },
@@ -76,13 +62,15 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
   let startIndex: number = 0;
   let endIndex: number = 0;
 
+  let target = node;
+
   // we only really care about expressions
   while ((startIndex = seek(template, expStart, endIndex)) !== -1) {
     // we found an expression start, first insert all the text up to here
     const value = template.substring(endIndex, startIndex);
 
     if (value !== '') {
-      node.children.push({
+      target.children.push({
         type: 'text',
         value,
       });
@@ -93,7 +81,7 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
       // evaluate expression in the current context
       const expression = template.substring(startIndex + 2, endIndex).trim();
 
-      let value = new Function(
+      const value: string | Visitor = new Function(
         ...Object.keys(data),
         ...Object.keys(_enso.helpers),
         ...Object.keys(_enso.builtins),
@@ -105,9 +93,10 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
       );
 
       if (typeof value === 'function') {
-        value(node);
+        // reassign the target in case the context has changed
+        target = value(target) ?? node;
       } else {
-        node.children.push({
+        target.children.push({
           type: 'text',
           value,
           expression,
@@ -125,7 +114,7 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
   const value = template.substring(endIndex);
 
   if (value !== '') {
-    node.children.push({
+    target.children.push({
       type: 'text',
       value,
     });
@@ -177,3 +166,47 @@ function* flatten(root: BranchNode): Generator<Node> {
 }
 
 export = _enso;
+
+type Maybe<T> = T | void;
+
+type Visitor = (visitor: BranchNode) => Maybe<BranchNode>
+type BuiltIn = (...args: any[]) => Visitor;
+
+interface EnsoProps {
+  delimiters: string;
+  context: BranchNode[];
+  helpers: { [id: string]: () => any };
+  blocks: { [id: string]: string };
+  builtins: { [id: string]: BuiltIn };
+  helper(id: string, callback: () => any): void;
+  block(id: string, template: string): void;
+}
+
+type Enso = (source: string, data?: {}) => string;
+
+interface RootNode {
+  type: 'root';
+  children: Node[];
+}
+
+interface BlockNode {
+  type: 'block';
+  children: Node[];
+}
+
+interface SlotNode {
+  type: 'slot';
+  children: Node[];
+}
+
+interface TextNode {
+  type: 'text';
+  expression?: string;
+  value: string;
+}
+
+type BranchNode = RootNode | BlockNode | SlotNode;
+type LeafNode = TextNode
+
+type Node = BranchNode | LeafNode;
+

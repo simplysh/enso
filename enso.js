@@ -1,6 +1,7 @@
 "use strict";
 const props = {
     delimiters: '{{}}',
+    context: [],
     helpers: {},
     blocks: {},
     builtins: {
@@ -13,6 +14,24 @@ const props = {
                 };
                 visitor.children.push(node);
                 parse(template, data, node);
+                // if rendering added a context, "yield" it
+                if (_enso.context.length)
+                    return _enso.context[_enso.context.length - 1];
+            };
+        },
+        slot() {
+            return function (visitor) {
+                const node = {
+                    type: 'slot',
+                    children: []
+                };
+                visitor.children.push(node);
+                _enso.context.push(node);
+            };
+        },
+        end() {
+            return function () {
+                _enso.context.pop();
             };
         }
     },
@@ -30,16 +49,18 @@ const _enso = Object.assign(function enso(source, data = {}) {
     }));
 }, props);
 function parse(template, data, node) {
+    var _a;
     const expStart = _enso.delimiters.substring(0, 2);
     const expEnd = _enso.delimiters.substring(2);
     let startIndex = 0;
     let endIndex = 0;
+    let target = node;
     // we only really care about expressions
     while ((startIndex = seek(template, expStart, endIndex)) !== -1) {
         // we found an expression start, first insert all the text up to here
         const value = template.substring(endIndex, startIndex);
         if (value !== '') {
-            node.children.push({
+            target.children.push({
                 type: 'text',
                 value,
             });
@@ -48,12 +69,13 @@ function parse(template, data, node) {
         if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
             // evaluate expression in the current context
             const expression = template.substring(startIndex + 2, endIndex).trim();
-            let value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
+            const value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
             if (typeof value === 'function') {
-                value(node);
+                // reassign the target in case the context has changed
+                target = (_a = value(target)) !== null && _a !== void 0 ? _a : node;
             }
             else {
-                node.children.push({
+                target.children.push({
                     type: 'text',
                     value,
                     expression,
@@ -67,7 +89,7 @@ function parse(template, data, node) {
     // insert the remaining text after expression
     const value = template.substring(endIndex);
     if (value !== '') {
-        node.children.push({
+        target.children.push({
             type: 'text',
             value,
         });

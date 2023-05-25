@@ -57,7 +57,7 @@ describe('built-ins', function() {
   });
 });
 
-describe.skip('blocks', function() {
+describe('blocks', function() {
   it('can be registered', function() {
     expect(() => enso.block('greet', 'Hello, {{name}}!')).not.to.throw();
     expect(enso.blocks).to.have.property('greet');
@@ -71,6 +71,17 @@ describe.skip('blocks', function() {
       enso("Exploring the city is a {{ render('wrap') }}must{{ end() }}!")
     ).to.equal(
       'Exploring the city is a <strong>must</strong>!'
+    );
+  });
+
+  it('can be nested with slots', function() {
+    enso.block('a', '<a>{{ slot() }}</a>');
+    enso.block('b', '<b>{{ slot() }}</b>');
+
+    expect(
+      enso("Double {{ render('a') }}{{ render('b') }}wrap{{ end() }}{{ end() }}, yo!")
+    ).to.equal(
+      'Double <a><b>wrap</b></a>, yo!'
     );
   });
 });
