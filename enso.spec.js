@@ -65,6 +65,24 @@ describe('built-ins', function() {
       );
     });
   });
+
+  describe('if', function() {
+    it('keeps content when true', function() {
+      expect(
+        enso('The answer is: {{ if(true) }}yes{{ end() }}.')
+      ).to.equal(
+        'The answer is: yes.'
+      );
+    });
+
+    it('removes content when false', function() {
+      expect(
+        enso('The answer is: {{ if(false) }}yes{{ end() }}.')
+      ).to.equal(
+        'The answer is: .'
+      );
+    });
+  });
 });
 
 describe('blocks', function() {

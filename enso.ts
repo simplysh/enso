@@ -35,6 +35,20 @@ const props: EnsoProps = {
       return function() {
         _enso.context.pop();
       }
+    },
+    _if(value: boolean) {
+      return function(visitor) {
+        const node: ConditionalNode = {
+          type: 'conditional',
+          value,
+          children: []
+        };
+
+        visitor.children.push(node);
+        _enso.context.push(node);
+
+        return node;
+      }
     }
   },
   helper(id: string, callback: () => string) {
@@ -85,7 +99,7 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
         ...Object.keys(data),
         ...Object.keys(_enso.helpers),
         ...Object.keys(_enso.builtins),
-        `return ${expression};`
+        `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`
       )(
         ...Object.values(data),
         ...Object.values(_enso.helpers),
@@ -157,7 +171,9 @@ function seek(text: string, sequence: string, from: number = 0): number {
 
 function* flatten(root: BranchNode): Generator<Node> {
   for (const node of root.children) {
-    if (node.type !== 'text') {
+    if (node.type === 'conditional') {
+      if (node.value) yield* flatten(node);
+    } else if (node.type !== 'text') {
       yield* flatten(node);
     } else {
       yield node;
@@ -199,13 +215,19 @@ interface SlotNode {
   children: Node[];
 }
 
+interface ConditionalNode {
+  type: 'conditional';
+  value: boolean;
+  children: Node[];
+}
+
 interface TextNode {
   type: 'text';
   expression?: string;
   value: string;
 }
 
-type BranchNode = RootNode | BlockNode | SlotNode;
+type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode;
 type LeafNode = TextNode
 
 type Node = BranchNode | LeafNode;

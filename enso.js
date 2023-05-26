@@ -33,6 +33,18 @@ const props = {
             return function () {
                 _enso.context.pop();
             };
+        },
+        _if(value) {
+            return function (visitor) {
+                const node = {
+                    type: 'conditional',
+                    value,
+                    children: []
+                };
+                visitor.children.push(node);
+                _enso.context.push(node);
+                return node;
+            };
         }
     },
     helper(id, callback) {
@@ -69,7 +81,7 @@ function parse(template, data, node) {
         if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
             const expression = template.substring(startIndex + 2, endIndex).trim();
             // evaluate expression in the current context
-            const value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
+            const value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
             if (typeof value === 'function') {
                 // reassign the target in case the context has changed
                 target = (_a = value(target)) !== null && _a !== void 0 ? _a : node;
@@ -125,7 +137,11 @@ function seek(text, sequence, from = 0) {
 }
 function* flatten(root) {
     for (const node of root.children) {
-        if (node.type !== 'text') {
+        if (node.type === 'conditional') {
+            if (node.value)
+                yield* flatten(node);
+        }
+        else if (node.type !== 'text') {
             yield* flatten(node);
         }
         else {
