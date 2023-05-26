@@ -54,6 +54,16 @@ describe('built-ins', function() {
         'Hello, James! Hello, Jake!'
       );
     });
+
+    it('can be nested', function() {
+      enso.block('super', "super");
+      enso.block('duper', "{{ render('super') }} duper");
+      enso.block('cool', "{{ render('duper') }} thing");
+
+      expect(enso( "{{ render('cool') }}")).to.equal(
+        'super duper thing'
+      );
+    });
   });
 });
 

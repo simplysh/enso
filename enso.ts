@@ -78,9 +78,9 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
 
     // read expression and move index
     if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
-      // evaluate expression in the current context
       const expression = template.substring(startIndex + 2, endIndex).trim();
 
+      // evaluate expression in the current context
       const value: string | Visitor = new Function(
         ...Object.keys(data),
         ...Object.keys(_enso.helpers),

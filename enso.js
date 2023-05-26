@@ -67,8 +67,8 @@ function parse(template, data, node) {
         }
         // read expression and move index
         if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
-            // evaluate expression in the current context
             const expression = template.substring(startIndex + 2, endIndex).trim();
+            // evaluate expression in the current context
             const value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
             if (typeof value === 'function') {
                 // reassign the target in case the context has changed
