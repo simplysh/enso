@@ -4,5 +4,8 @@
 ✓ blocks
 live expressions
 end block immediately?
-is/not
-each
+if/else
+✓ each
+block shorthand
+unless
+mutable state

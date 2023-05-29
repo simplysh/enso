@@ -10,6 +10,7 @@ const props: EnsoProps = {
 
         const node: BlockNode = {
           type: 'block',
+          deferred: false,
           children: []
         };
 
@@ -24,6 +25,7 @@ const props: EnsoProps = {
       return function(visitor) {
         const node: SlotNode = {
           type: 'slot',
+          deferred: false,
           children: []
         };
 
@@ -33,13 +35,52 @@ const props: EnsoProps = {
     },
     end() {
       return function() {
-        _enso.context.pop();
+        const node = _enso.context.pop();
+        if (!node) return;
+
+        switch (node.type) {
+          // evaluate the iterator node, now that we have its entire body
+          case 'iterator':
+            // make a copy of children before clearing
+            const body: Node[] = [...node.children];
+            node.children = [];
+            node.deferred = false;
+
+            // loop through all the values and apply them to all the children in order
+            // self becomes the value iterated through
+            for (const value of node.value) {
+              for (const component of body) {
+                if (component.type === 'text') {
+                  parse(component.expression ?? component.value, { self: value }, node);
+                }
+              }
+            }
+
+            break;
+          default: break;
+        }
       }
     },
     _if(value: boolean) {
       return function(visitor) {
         const node: ConditionalNode = {
           type: 'conditional',
+          deferred: false,
+          value,
+          children: []
+        };
+
+        visitor.children.push(node);
+        _enso.context.push(node);
+
+        return node;
+      }
+    },
+    each(value: Iterable<any>) {
+      return function(visitor) {
+        const node: IteratorNode = {
+          type: 'iterator',
+          deferred: true,
           value,
           children: []
         };
@@ -63,6 +104,7 @@ const _enso = Object.assign(
   <Enso>function enso(source, data = {}) {
     return output(parse(source, data, {
       type: 'root',
+      deferred: false,
       children: [],
     }));
   },
@@ -86,6 +128,7 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
     if (value !== '') {
       target.children.push({
         type: 'text',
+        deferred: false,
         value,
       });
     }
@@ -93,18 +136,23 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
     // read expression and move index
     if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
       const expression = template.substring(startIndex + 2, endIndex).trim();
+      let value: string | Visitor;
 
-      // evaluate expression in the current context
-      const value: string | Visitor = new Function(
-        ...Object.keys(data),
-        ...Object.keys(_enso.helpers),
-        ...Object.keys(_enso.builtins),
-        `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`
-      )(
-        ...Object.values(data),
-        ...Object.values(_enso.helpers),
-        ...Object.values(_enso.builtins)
-      );
+      if (!target.deferred || expression === 'end()') {
+        // evaluate expression in the current context
+        value = new Function(
+          ...Object.keys(data),
+          ...Object.keys(_enso.helpers),
+          ...Object.keys(_enso.builtins),
+          `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`
+        )(
+          ...Object.values(data),
+          ...Object.values(_enso.helpers),
+          ...Object.values(_enso.builtins)
+        );
+      } else {
+        value = expression;
+      }
 
       if (typeof value === 'function') {
         // reassign the target in case the context has changed
@@ -112,8 +160,9 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
       } else {
         target.children.push({
           type: 'text',
+          deferred: false,
           value,
-          expression,
+          expression: `{{${expression}}}`,
         });
       }
 
@@ -130,6 +179,7 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
   if (value !== '') {
     target.children.push({
       type: 'text',
+      deferred: false,
       value,
     });
   }
@@ -202,33 +252,45 @@ type Enso = (source: string, data?: {}) => string;
 
 interface RootNode {
   type: 'root';
+  deferred: boolean;
   children: Node[];
 }
 
 interface BlockNode {
   type: 'block';
+  deferred: boolean;
   children: Node[];
 }
 
 interface SlotNode {
   type: 'slot';
+  deferred: boolean;
+  children: Node[];
+}
+
+interface IteratorNode {
+  type: 'iterator';
+  deferred: boolean;
+  value: Iterable<any>;
   children: Node[];
 }
 
 interface ConditionalNode {
   type: 'conditional';
+  deferred: boolean;
   value: boolean;
   children: Node[];
 }
 
 interface TextNode {
   type: 'text';
+  deferred: boolean;
   expression?: string;
   value: string;
 }
 
-type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode;
-type LeafNode = TextNode
+type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode | IteratorNode;
+type LeafNode = TextNode;
 
 type Node = BranchNode | LeafNode;
 

@@ -83,6 +83,19 @@ describe('built-ins', function() {
       );
     });
   });
+
+  describe('each', function() {
+    it('works with arrays', function() {
+      expect(
+        enso(
+          "I'd like to visit: {{ each(cities) }}{{self}}, {{ end() }}and Nara!",
+          { cities: ['Tokyo', 'Kyoto', 'Nagoya'] }
+        )
+      ).to.equal(
+        "I'd like to visit: Tokyo, Kyoto, Nagoya, and Nara!"
+      );
+    });
+  });
 });
 
 describe('blocks', function() {

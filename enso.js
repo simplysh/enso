@@ -10,6 +10,7 @@ const props = {
                 const template = _enso.blocks[blockId];
                 const node = {
                     type: 'block',
+                    deferred: false,
                     children: []
                 };
                 visitor.children.push(node);
@@ -23,6 +24,7 @@ const props = {
             return function (visitor) {
                 const node = {
                     type: 'slot',
+                    deferred: false,
                     children: []
                 };
                 visitor.children.push(node);
@@ -31,13 +33,49 @@ const props = {
         },
         end() {
             return function () {
-                _enso.context.pop();
+                var _a;
+                const node = _enso.context.pop();
+                if (!node)
+                    return;
+                switch (node.type) {
+                    // evaluate the iterator node, now that we have its entire body
+                    case 'iterator':
+                        // make a copy of children before clearing
+                        const body = [...node.children];
+                        node.children = [];
+                        node.deferred = false;
+                        // loop through all the values and apply them to all the children in order
+                        // self becomes the value iterated through
+                        for (const value of node.value) {
+                            for (const component of body) {
+                                if (component.type === 'text') {
+                                    parse((_a = component.expression) !== null && _a !== void 0 ? _a : component.value, { self: value }, node);
+                                }
+                            }
+                        }
+                        break;
+                    default: break;
+                }
             };
         },
         _if(value) {
             return function (visitor) {
                 const node = {
                     type: 'conditional',
+                    deferred: false,
+                    value,
+                    children: []
+                };
+                visitor.children.push(node);
+                _enso.context.push(node);
+                return node;
+            };
+        },
+        each(value) {
+            return function (visitor) {
+                const node = {
+                    type: 'iterator',
+                    deferred: true,
                     value,
                     children: []
                 };
@@ -57,6 +95,7 @@ const props = {
 const _enso = Object.assign(function enso(source, data = {}) {
     return output(parse(source, data, {
         type: 'root',
+        deferred: false,
         children: [],
     }));
 }, props);
@@ -74,14 +113,21 @@ function parse(template, data, node) {
         if (value !== '') {
             target.children.push({
                 type: 'text',
+                deferred: false,
                 value,
             });
         }
         // read expression and move index
         if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
             const expression = template.substring(startIndex + 2, endIndex).trim();
-            // evaluate expression in the current context
-            const value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
+            let value;
+            if (!target.deferred || expression === 'end()') {
+                // evaluate expression in the current context
+                value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
+            }
+            else {
+                value = expression;
+            }
             if (typeof value === 'function') {
                 // reassign the target in case the context has changed
                 target = (_a = value(target)) !== null && _a !== void 0 ? _a : node;
@@ -89,8 +135,9 @@ function parse(template, data, node) {
             else {
                 target.children.push({
                     type: 'text',
+                    deferred: false,
                     value,
-                    expression,
+                    expression: `{{${expression}}}`,
                 });
             }
             endIndex = endIndex + 2;
@@ -103,6 +150,7 @@ function parse(template, data, node) {
     if (value !== '') {
         target.children.push({
             type: 'text',
+            deferred: false,
             value,
         });
     }
