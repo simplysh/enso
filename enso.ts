@@ -23,6 +23,10 @@ const props: EnsoProps = {
     },
     slot() {
       return function(visitor) {
+        if (visitor.type !== 'block') {
+          throw new Error('Slots may only be used within block expressions.');
+        }
+
         const node: SlotNode = {
           type: 'slot',
           deferred: false,
