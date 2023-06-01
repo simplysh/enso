@@ -40,6 +40,26 @@ describe('interpolation', function() {
   });
 });
 
+describe('deferred', function() {
+  it('lazily evaluated', function() {
+    enso.helper('change', function() { this.guests.push('Amy') });
+
+    expect(
+      enso(`
+        We have {#{{ guests.length }}#} guests:{#{{ each(guests) }}
+        {{self}}{{ end() }}#}
+        {{ change() }}`,
+        { guests: ['John', 'Noah'] }
+      )).to.equal(`
+        We have 3 guests:
+        John
+        Noah
+        Amy
+        `
+      );
+  });
+})
+
 describe('built-ins', function() {
   describe('render', function() {
     it('can accept data', function() {

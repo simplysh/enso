@@ -93,14 +93,22 @@ const props = {
     },
     block(blockId, template) {
         this.blocks[blockId] = template;
-    }
+    },
+    deferred: []
 };
 const _enso = Object.assign(function enso(source, data = {}) {
-    return output(parse(source, data, {
+    const ast = parse(source, data, {
         type: 'root',
         deferred: false,
         children: [],
-    }));
+    });
+    // evaluate deferred (lazy) expressions
+    for (const node of _enso.deferred) {
+        node.deferred = false;
+        parse(node.value, data, node);
+    }
+    _enso.deferred = [];
+    return output(ast);
 }, props);
 function parse(template, data, node) {
     var _a, _b;
@@ -120,8 +128,22 @@ function parse(template, data, node) {
                 value,
             });
         }
-        // read expression and move index
-        if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
+        const isDeferred = template[startIndex + 1] === '#';
+        if (isDeferred && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+            const expression = template.substring(startIndex + 2, endIndex).trim();
+            const node = {
+                type: 'deferred',
+                deferred: true,
+                value: expression,
+                children: []
+            };
+            target.children.push(node);
+            _enso.deferred.push(node);
+            endIndex = endIndex + 2;
+            continue;
+        }
+        else if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
+            // read expression and move index
             const expression = template.substring(startIndex + 2, endIndex).trim();
             let value;
             if (!target.deferred || expression === 'end()') {
@@ -177,7 +199,7 @@ function seek(text, sequence, from = 0) {
     let found;
     let start = from;
     while ((found = text.indexOf(sequence[0], start)) !== -1) {
-        if (text[found + 1] === sequence[1]) {
+        if (text[found + 1] === sequence[1] || text[found + 1] === '#') {
             return found;
         }
         else {

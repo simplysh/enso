@@ -101,16 +101,26 @@ const props: EnsoProps = {
   },
   block(blockId: string, template: string) {
     this.blocks[blockId] = template;
-  }
+  },
+  deferred: []
 };
 
 const _enso = Object.assign(
   <Enso>function enso(source, data = {}) {
-    return output(parse(source, data, {
+    const ast = parse(source, data, {
       type: 'root',
       deferred: false,
       children: [],
-    }));
+    });
+
+    // evaluate deferred (lazy) expressions
+    for (const node of _enso.deferred) {
+      node.deferred = false;
+      parse(node.value, data, node);
+    }
+    _enso.deferred = [];
+
+    return output(ast);
   },
   props
 );
@@ -137,8 +147,25 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
       });
     }
 
-    // read expression and move index
-    if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
+    const isDeferred = template[startIndex + 1] === '#';
+
+    if (isDeferred && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+      const expression = template.substring(startIndex + 2, endIndex).trim();
+
+      const node: DeferredNode = {
+        type: 'deferred',
+        deferred: true,
+        value: expression,
+        children: []
+      };
+
+      target.children.push(node);
+      _enso.deferred.push(node);
+
+      endIndex = endIndex + 2;
+      continue;
+    } else if ((endIndex = seek(template, expEnd, startIndex)) !== -1) {
+      // read expression and move index
       const expression = template.substring(startIndex + 2, endIndex).trim();
       let value: string | Visitor;
 
@@ -213,7 +240,7 @@ function seek(text: string, sequence: string, from: number = 0): number {
   let start = from;
 
   while ((found = text.indexOf(sequence[0], start)) !== -1) {
-    if (text[found + 1] === sequence[1]) {
+    if (text[found + 1] === sequence[1] || text[found + 1] === '#') {
       return found;
     } else {
       start = found + 1;
@@ -250,6 +277,7 @@ interface EnsoProps {
   builtins: { [id: string]: BuiltIn };
   helper(id: string, callback: () => Maybe<string>): void;
   block(id: string, template: string): void;
+  deferred: DeferredNode[]
 }
 
 type Enso = (source: string, data?: {}) => string;
@@ -286,6 +314,13 @@ interface ConditionalNode {
   children: Node[];
 }
 
+interface DeferredNode {
+  type: 'deferred';
+  deferred: boolean;
+  value: string;
+  children: Node[];
+}
+
 interface TextNode {
   type: 'text';
   deferred: boolean;
@@ -293,7 +328,7 @@ interface TextNode {
   value: string;
 }
 
-type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode | IteratorNode;
+type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode | IteratorNode | DeferredNode;
 type LeafNode = TextNode;
 
 type Node = BranchNode | LeafNode;
