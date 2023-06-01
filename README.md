@@ -85,6 +85,20 @@ enso('{{ quote(loud(action)) }}!, he shouted', { action: 'run' });
 // -> "RUN!", he shouted
 ```
 
+Helpers can also mutate data. As this can make your data flow harder to track, it should be used sparingly.
+
+Example:
+
+```js
+enso.helper('travel', function(to) { return this.city = to });
+
+enso(
+    "I drove from {{city}} to {{ travel('Kyoto') }}. I am now in {{city}}.",
+    { city: 'Tokyo' }
+);
+// -> I drove from Tokyo to Kyoto. I am now in Kyoto.
+```
+
 ## Built-in function expressions
 
 These functions are provided by enso and are usable within interpolation expressions, to various effects. Due to their nature, these functions should appear at the top-level of an interpolation expression and should not be composed.
