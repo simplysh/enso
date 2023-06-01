@@ -2,7 +2,7 @@
 The expressive templating engine.
 
 ## Note
-enso is still in development!
+enso is still in development! Syntax and design choices might change.
 
 ## What is enso?
 
@@ -57,6 +57,17 @@ enso("{{ render('greet', { name: names[1] }) }}", { names: ['Andy', 'James'] });
 // -> Hello, James!
 ```
 
+Blocks may also use the built-in `slot()` function expression to capture content in the parent context and define where it will appear within the block. In this way they become similar to components. Blocks which use slot **must** make a call to `end()` to suggest where the block scope ends.
+
+Example:
+
+```js
+enso.block('emphasize', '<em>{{ slot() }}</em>');
+
+enso("Get out of bed {{ render('emphasize') }}now{{ end() }}!");
+// -> Get out of bed <em>now</em>!
+```
+
 ### `enso.helper(id: string, callback: () => Maybe<string>): void;`
 
 Register a helper function with enso. Helper functions are made available in enso expressions, and can do virtually anything, from data transformations to side-effects. If a helper returns a string value, it will be used in-place.
@@ -72,7 +83,7 @@ enso('"{{ loud(action) }}!", he shouted', { action: 'run' });
 
 ## Built-in function expressions
 
-These functions are provided by enso and are usable within interpolation expressions, to various effects. Do to their nature, these functions should appear at the top-level of an interpolation expression and should not be composed.
+These functions are provided by enso and are usable within interpolation expressions, to various effects. Due to their nature, these functions should appear at the top-level of an interpolation expression and should not be composed.
 
 ### `render(blockId: string, data?: {})`
 ### `slot()`
