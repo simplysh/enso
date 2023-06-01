@@ -6,7 +6,7 @@ enso is still in development! Syntax and design choices might change.
 
 ## What is enso?
 
-Enso is a templating engine written in TypeScript. It is heavily inspired by handlebars, but unlike more general purpose templating engines, which strive to be language agnostic, enso works solely with JavaScript expressions.
+enso is a templating engine written in TypeScript. It is heavily inspired by Handlebars, but unlike more general purpose templating engines, which strive to be language agnostic, enso works solely with JavaScript expressions.
 
 This means that any JavaScript expression can be used as an interpolated value:
 
@@ -43,7 +43,7 @@ enso('{{city}} is my hometown.', { city: 'Nara' });
 ```
 ### `enso.block(blockId: string, source: string): void`
 
-Register a string template with enso. It can then be recalled and rendered as many times as required using the `render()` built-in function within interpolation expressions. Blocks are similar to handlebars partials, have their own scope, and can be given any data.
+Register a string template with enso. It can then be recalled and rendered as many times as required using the `render()` built-in function within interpolation expressions. Blocks are similar to Handlebars partials, have their own scope, and can be given any data.
 
 Example:
 
@@ -68,7 +68,7 @@ enso("Get out of bed {{ render('emphasize') }}now{{ end() }}!");
 // -> Get out of bed <em>now</em>!
 ```
 
-### `enso.helper(id: string, callback: () => Maybe<string>): void;`
+### `enso.helper(id: string, callback: () => Maybe<string>): void`
 
 Register a helper function with enso. Helper functions are made available in enso expressions, and can do virtually anything, from data transformations to side-effects. If a helper returns a string value, it will be used in-place.
 
