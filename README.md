@@ -39,10 +39,40 @@ Example:
 
 ```js
 enso('{{city}} is my hometown.', { city: 'Nara' });
-// -> 'Nara is my hometown.'
+// -> Nara is my hometown.
+```
+### `enso.block(blockId: string, source: string): void`
+
+Register a string template with enso. It can then be recalled and rendered as many times as required using the `render()` built-in function within interpolation expressions. Blocks are similar to handlebars partials, have their own scope, and can be given any data.
+
+Example:
+
+```js
+enso.block('greet', 'Hello, {{name}}!');
+
+enso("{{ render('greet', { name: 'Molly' }) }}");
+// -> Hello, Molly!
+
+enso("{{ render('greet', { name: names[1] }) }}", { names: ['Andy', 'James'] });
+// -> Hello, James!
 ```
 
-## Built-in expressions
+### `enso.helper(id: string, callback: () => Maybe<string>): void;`
+
+Register a helper function with enso. Helper functions are made available in enso expressions, and can do virtually anything, from data transformations to side-effects. If a helper returns a string value, it will be used in-place.
+
+Example:
+
+```js
+enso.helper('loud', (value) => value.toUpperCase());
+
+enso('"{{ loud(action) }}!", he shouted', { action: 'run' });
+// -> "RUN!", he shouted
+```
+
+## Built-in function expressions
+
+These functions are provided by enso and are usable within interpolation expressions, to various effects. Do to their nature, these functions should appear at the top-level of an interpolation expression and should not be composed.
 
 ### `render(blockId: string, data?: {})`
 ### `slot()`

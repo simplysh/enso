@@ -96,11 +96,11 @@ const props: EnsoProps = {
       }
     }
   },
-  helper(id: string, callback: () => string) {
-    this.helpers[id] = callback;
+  helper(helperId: string, callback: () => string) {
+    this.helpers[helperId] = callback;
   },
-  block(id: string, template: string) {
-    this.blocks[id] = template;
+  block(blockId: string, template: string) {
+    this.blocks[blockId] = template;
   }
 };
 
@@ -248,7 +248,7 @@ interface EnsoProps {
   helpers: { [id: string]: () => any };
   blocks: { [id: string]: string };
   builtins: { [id: string]: BuiltIn };
-  helper(id: string, callback: () => any): void;
+  helper(id: string, callback: () => Maybe<string>): void;
   block(id: string, template: string): void;
 }
 

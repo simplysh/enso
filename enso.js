@@ -88,11 +88,11 @@ const props = {
             };
         }
     },
-    helper(id, callback) {
-        this.helpers[id] = callback;
+    helper(helperId, callback) {
+        this.helpers[helperId] = callback;
     },
-    block(id, template) {
-        this.blocks[id] = template;
+    block(blockId, template) {
+        this.blocks[blockId] = template;
     }
 };
 const _enso = Object.assign(function enso(source, data = {}) {
