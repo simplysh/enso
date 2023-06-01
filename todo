@@ -6,6 +6,7 @@ live expressions
 end block immediately?
 if/else
 ✓ each
+each creates array out of argumentrs
 block shorthand
 unless
-mutable state
+✓ mutable state

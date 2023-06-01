@@ -137,5 +137,15 @@ describe('helpers', function() {
       '"RUN!", he shouted'
     );
   });
+
+  it('can mutate data', function() {
+    enso.helper('travel', function(to) { return this.city = to });
+
+    expect(
+      enso("I drove from {{city}} to {{ travel('Kyoto') }}. I am now in {{city}}.", { city: 'Tokyo' })
+    ).to.equal(
+      'I drove from Tokyo to Kyoto. I am now in Kyoto.'
+    );
+  });
 });
 

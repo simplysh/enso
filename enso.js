@@ -103,7 +103,7 @@ const _enso = Object.assign(function enso(source, data = {}) {
     }));
 }, props);
 function parse(template, data, node) {
-    var _a;
+    var _a, _b;
     const expStart = _enso.delimiters.substring(0, 2);
     const expEnd = _enso.delimiters.substring(2);
     let startIndex = 0;
@@ -126,14 +126,14 @@ function parse(template, data, node) {
             let value;
             if (!target.deferred || expression === 'end()') {
                 // evaluate expression in the current context
-                value = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers), ...Object.values(_enso.builtins));
+                value = (_a = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers).map(value => value.bind(data)), ...Object.values(_enso.builtins))) !== null && _a !== void 0 ? _a : '';
             }
             else {
                 value = expression;
             }
             if (typeof value === 'function') {
                 // reassign the target in case the context has changed
-                target = (_a = value(target)) !== null && _a !== void 0 ? _a : node;
+                target = (_b = value(target)) !== null && _b !== void 0 ? _b : node;
             }
             else {
                 target.children.push({

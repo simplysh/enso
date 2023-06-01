@@ -33,7 +33,7 @@ Hello, George!
 
 ### `enso(source: string, data?: {}): string`
 
-This is the main callable function in enso. Given a source string, and an optional data object, it will interpolate all the expressions in the source.
+This is the main callable function in enso. Given a source string, and an optional data object, it will interpolate all the expressions in the source. Every property in the data object is available in the interpolation expression.
 
 Example:
 
@@ -68,16 +68,20 @@ enso("Get out of bed {{ render('emphasize') }}now{{ end() }}!");
 // -> Get out of bed <em>now</em>!
 ```
 
-### `enso.helper(id: string, callback: () => Maybe<string>): void`
+### `enso.helper(helperId: string, callback: () => Maybe<string>): void`
 
-Register a helper function with enso. Helper functions are made available in enso expressions, and can do virtually anything, from data transformations to side-effects. If a helper returns a string value, it will be used in-place.
+Register a helper function with enso. Helper functions are made available in enso expressions, and can do virtually anything, from data transformations to side-effects. Helpers can also be composed for more elegant reusability patterns. If the resulting value is a string, it will be used in place.
 
 Example:
 
 ```js
 enso.helper('loud', (value) => value.toUpperCase());
+enso.helper('quote', (value) => `"${value}"`);
 
-enso('"{{ loud(action) }}!", he shouted', { action: 'run' });
+enso('{{ loud(action) }}!, he shouted', { action: 'run' });
+// -> RUN!, he shouted
+
+enso('{{ quote(loud(action)) }}!, he shouted', { action: 'run' });
 // -> "RUN!", he shouted
 ```
 

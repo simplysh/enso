@@ -151,9 +151,9 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
           `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`
         )(
           ...Object.values(data),
-          ...Object.values(_enso.helpers),
+          ...Object.values(_enso.helpers).map(value => value.bind(data)),
           ...Object.values(_enso.builtins)
-        );
+        ) ?? '';
       } else {
         value = expression;
       }
