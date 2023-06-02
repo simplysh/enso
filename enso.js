@@ -2,6 +2,7 @@
 const props = {
     delimiters: '{{}}',
     context: [],
+    data: {},
     helpers: {},
     blocks: {},
     builtins: {
@@ -97,6 +98,7 @@ const props = {
     deferred: []
 };
 const _enso = Object.assign(function enso(source, data = {}) {
+    _enso.data = data;
     const ast = parse(source, data, {
         type: 'root',
         deferred: false,
@@ -148,7 +150,7 @@ function parse(template, data, node) {
             let value;
             if (!target.deferred || expression === 'end()') {
                 // evaluate expression in the current context
-                value = (_a = new Function(...Object.keys(data), ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), ...Object.values(_enso.helpers).map(value => value.bind(data)), ...Object.values(_enso.builtins))) !== null && _a !== void 0 ? _a : '';
+                value = (_a = new Function(...Object.keys(data), 'context', ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), _enso.data, ...Object.values(_enso.helpers).map(value => value.bind(_enso.data)), ...Object.values(_enso.builtins))) !== null && _a !== void 0 ? _a : '';
             }
             else {
                 value = expression;

@@ -1,6 +1,7 @@
 const props: EnsoProps = {
   delimiters: '{{}}',
   context: [],
+  data: {},
   helpers: {},
   blocks: {},
   builtins: {
@@ -107,6 +108,8 @@ const props: EnsoProps = {
 
 const _enso = Object.assign(
   <Enso>function enso(source, data = {}) {
+    _enso.data = data;
+
     const ast = parse(source, data, {
       type: 'root',
       deferred: false,
@@ -173,12 +176,14 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
         // evaluate expression in the current context
         value = new Function(
           ...Object.keys(data),
+          'context',
           ...Object.keys(_enso.helpers),
           ...Object.keys(_enso.builtins),
           `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`
         )(
           ...Object.values(data),
-          ...Object.values(_enso.helpers).map(value => value.bind(data)),
+          _enso.data,
+          ...Object.values(_enso.helpers).map(value => value.bind(_enso.data)),
           ...Object.values(_enso.builtins)
         ) ?? '';
       } else {
@@ -272,6 +277,7 @@ type BuiltIn = (...args: any[]) => Visitor;
 interface EnsoProps {
   delimiters: string;
   context: BranchNode[];
+  data: object;
   helpers: { [id: string]: () => any };
   blocks: { [id: string]: string };
   builtins: { [id: string]: BuiltIn };

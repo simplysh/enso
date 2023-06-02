@@ -125,6 +125,16 @@ describe('blocks', function() {
     expect(enso.blocks['greet']).to.equal('Hello, {{name}}!');
   });
 
+  it('can access global context data', function() {
+    enso.block('greet', 'Hello from {{context.city}}!');
+
+    expect(
+      enso("{{ render('greet') }}", { city: 'Osaka' })
+    ).to.equal(
+      'Hello from Osaka!'
+    );
+  });
+
   it('can use slots', function() {
     enso.block('wrap', '<strong>{{ slot() }}</strong>');
 

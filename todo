@@ -2,11 +2,10 @@
 ✓ interpolation of expressions
 ✓ helpers
 ✓ blocks
-live expressions
+✓ mutable state
+✓ each
 end block immediately?
 if/else
-✓ each
 each creates array out of argumentrs
 block shorthand
 unless
-✓ mutable state
