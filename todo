@@ -1,9 +1,3 @@
-✓ interpolation of values
-✓ interpolation of expressions
-✓ helpers
-✓ blocks
-✓ mutable state
-✓ each
 end block immediately?
 if/else
 each creates array out of argumentrs

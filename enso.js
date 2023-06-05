@@ -130,8 +130,9 @@ function parse(template, data, node) {
                 value,
             });
         }
-        const isDeferred = template[startIndex + 1] === '#';
-        if (isDeferred && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+        const isDeferred = template[startIndex + 1] === '_';
+        const isEscaped = template[startIndex + 1] === '#';
+        if (isDeferred && (endIndex = seek(template, `_${expEnd[1]}`, startIndex)) !== -1) {
             const expression = template.substring(startIndex + 2, endIndex).trim();
             const node = {
                 type: 'deferred',
@@ -141,6 +142,17 @@ function parse(template, data, node) {
             };
             target.children.push(node);
             _enso.deferred.push(node);
+            endIndex = endIndex + 2;
+            continue;
+        }
+        else if (isEscaped && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+            const expression = template.substring(startIndex + 2, endIndex).trim();
+            const node = {
+                type: 'text',
+                deferred: false,
+                value: expression
+            };
+            target.children.push(node);
             endIndex = endIndex + 2;
             continue;
         }
@@ -201,7 +213,7 @@ function seek(text, sequence, from = 0) {
     let found;
     let start = from;
     while ((found = text.indexOf(sequence[0], start)) !== -1) {
-        if (text[found + 1] === sequence[1] || text[found + 1] === '#') {
+        if (text[found + 1] === sequence[1] || text[found + 1] === '_' || text[found + 1] === '#') {
             return found;
         }
         else {

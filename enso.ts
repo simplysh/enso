@@ -150,9 +150,10 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
       });
     }
 
-    const isDeferred = template[startIndex + 1] === '#';
+    const isDeferred = template[startIndex + 1] === '_';
+    const isEscaped = template[startIndex + 1] === '#';
 
-    if (isDeferred && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+    if (isDeferred && (endIndex = seek(template, `_${expEnd[1]}`, startIndex)) !== -1) {
       const expression = template.substring(startIndex + 2, endIndex).trim();
 
       const node: DeferredNode = {
@@ -164,6 +165,19 @@ function parse(template: string, data: object, node: BranchNode): BranchNode {
 
       target.children.push(node);
       _enso.deferred.push(node);
+
+      endIndex = endIndex + 2;
+      continue;
+    } else if (isEscaped && (endIndex = seek(template, `#${expEnd[1]}`, startIndex)) !== -1) {
+      const expression = template.substring(startIndex + 2, endIndex).trim();
+
+      const node: TextNode = {
+        type: 'text',
+        deferred: false,
+        value: expression
+      };
+
+      target.children.push(node);
 
       endIndex = endIndex + 2;
       continue;
@@ -245,7 +259,7 @@ function seek(text: string, sequence: string, from: number = 0): number {
   let start = from;
 
   while ((found = text.indexOf(sequence[0], start)) !== -1) {
-    if (text[found + 1] === sequence[1] || text[found + 1] === '#') {
+    if (text[found + 1] === sequence[1] || text[found + 1] === '_' || text[found + 1] === '#') {
       return found;
     } else {
       start = found + 1;
@@ -334,7 +348,12 @@ interface TextNode {
   value: string;
 }
 
-type BranchNode = RootNode | BlockNode | SlotNode | ConditionalNode | IteratorNode | DeferredNode;
+type BranchNode = RootNode
+  | BlockNode
+  | SlotNode
+  | ConditionalNode
+  | IteratorNode
+  | DeferredNode;
 type LeafNode = TextNode;
 
 type Node = BranchNode | LeafNode;

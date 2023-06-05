@@ -46,8 +46,8 @@ describe('deferred', function() {
 
     expect(
       enso(`
-        We have {#{{ guests.length }}#} guests:{#{{ each(guests) }}
-        {{self}}{{ end() }}#}
+        We have {_{{ guests.length }}_} guests:{_{{ each(guests) }}
+        {{self}}{{ end() }}_}
         {{ change() }}`,
         { guests: ['John', 'Noah'] }
       )).to.equal(`
@@ -58,7 +58,18 @@ describe('deferred', function() {
         `
       );
   });
-})
+});
+
+describe('escape', function() {
+  it('will treat expressions as text', function() {
+    expect(
+      enso(
+        'This shall remain {#{{ unchanged }}#}'
+      )).to.equal(
+        'This shall remain {{ unchanged }}'
+      );
+  });
+});
 
 describe('built-ins', function() {
   describe('render', function() {
