@@ -57,7 +57,7 @@ enso("{{ render('greet', { name: names[1] }) }}", { names: ['Andy', 'James'] });
 // -> Hello, James!
 ```
 
-Blocks may also use the built-in `slot()` function expression to capture content in the parent context and define where it will appear within the block. In this way they become similar to components. Blocks which use slot **must** make a call to `end()` to suggest where the block scope ends.
+Blocks may also use the built-in `slot()` function expression to capture content in the parent context and define where it will appear within the block. In this way they become similar to components. Blocks which use slot **must** make a call to `end()` to mark where the block scope ends.
 
 Example:
 
