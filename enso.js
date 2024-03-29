@@ -162,7 +162,9 @@ function parse(template, data, node) {
             let value;
             if (!target.deferred || expression === 'end()') {
                 // evaluate expression in the current context
-                value = (_a = new Function(...Object.keys(data), 'context', ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression.replace(/if\((.*)\)/g, '_if($1)')};`)(...Object.values(data), _enso.data, ...Object.values(_enso.helpers).map(value => value.bind(_enso.data)), ...Object.values(_enso.builtins))) !== null && _a !== void 0 ? _a : '';
+                value = (_a = new Function(...Object.keys(data), 'context', 'isset', ...Object.keys(_enso.helpers), ...Object.keys(_enso.builtins), `return ${expression
+                    .replace(/if\((.*)\)/g, '_if(Boolean($1))')
+                    .replace(/unless\((.*)\)/g, '_if(!Boolean($1))')};`)(...Object.values(data), _enso.data, (key) => Object.hasOwn(data, key), ...Object.values(_enso.helpers).map(value => value.bind(_enso.data)), ...Object.values(_enso.builtins))) !== null && _a !== void 0 ? _a : '';
             }
             else {
                 value = expression;

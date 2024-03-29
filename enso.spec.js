@@ -115,6 +115,24 @@ describe('built-ins', function() {
     });
   });
 
+  describe('unless', function() {
+    it('removes content when true', function() {
+      expect(
+        enso('The answer is: {{ unless(true) }}yes{{ end() }}.')
+      ).to.equal(
+        'The answer is: .'
+      );
+    });
+
+    it('keeps content when false', function() {
+      expect(
+        enso('The answer is: {{ unless(false) }}yes{{ end() }}.')
+      ).to.equal(
+        'The answer is: yes.'
+      );
+    });
+  });
+
   describe('each', function() {
     it('works with arrays', function() {
       expect(
