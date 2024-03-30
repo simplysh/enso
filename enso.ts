@@ -45,7 +45,7 @@ const props: EnsoProps = {
 
         switch (node.type) {
           // evaluate the iterator node, now that we have its entire body
-          case 'iterator':
+          case 'iterator': {
             // make a copy of children before clearing
             const body: Node[] = [...node.children];
             node.children = [];
@@ -60,8 +60,26 @@ const props: EnsoProps = {
                 }
               }
             }
+            break;
+          }
+
+          case 'conditional': {
+            // make a copy of children before clearing
+            const body: Node[] = [...node.children];
+            node.children = [];
+            node.deferred = false;
+
+            if (node.value) {
+              for (const component of body) {
+                if (component.type === 'text') {
+                  parse(component.expression ?? component.value, _enso.data, node);
+                }
+              }
+            }
 
             break;
+          }
+
           default: break;
         }
       }
@@ -70,7 +88,7 @@ const props: EnsoProps = {
       return function(visitor) {
         const node: ConditionalNode = {
           type: 'conditional',
-          deferred: false,
+          deferred: true,
           value,
           children: []
         };

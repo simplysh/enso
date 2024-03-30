@@ -100,18 +100,22 @@ describe('built-ins', function() {
   describe('if', function() {
     it('keeps content when true', function() {
       expect(
-        enso('The answer is: {{ if(true) }}yes{{ end() }}.')
+        enso('The answer is: {{ if(true) }}{{ 1 + 1 }}{{ end() }}.')
       ).to.equal(
-        'The answer is: yes.'
+        'The answer is: 2.'
       );
     });
 
     it('removes content when false', function() {
       expect(
-        enso('The answer is: {{ if(false) }}yes{{ end() }}.')
+        enso('The answer is: {{ if(false) }}{{ 1 + 1 }}{{ end() }}.')
       ).to.equal(
         'The answer is: .'
       );
+    });
+
+    it('is lazily evaluated', function() {
+      expect(() => enso('{{ if(false) }}{{ 1 + 2 + something }}{{ end() }}')).not.to.throw();
     });
   });
 
